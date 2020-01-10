@@ -6,20 +6,20 @@ c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\main.cpp(2
           [
               _Ty=int
           ]
-c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\main.cpp(84): warning C4244: 'initialisation' : conversion de 'double' en 'float', perte possible de données
-c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\main.cpp(90): warning C4244: '=' : conversion de 'double' en '_Ty', perte possible de données
+c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\main.cpp(98): warning C4244: 'initialisation' : conversion de 'double' en 'float', perte possible de données
+c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\main.cpp(104): warning C4244: '=' : conversion de 'double' en '_Ty', perte possible de données
           with
           [
               _Ty=unsigned char
           ]
-c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\main.cpp(91): warning C4244: '=' : conversion de 'double' en '_Ty', perte possible de données
+c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\main.cpp(105): warning C4244: '=' : conversion de 'double' en '_Ty', perte possible de données
           with
           [
               _Ty=unsigned char
           ]
-c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\main.cpp(92): warning C4244: '=' : conversion de 'double' en '_Ty', perte possible de données
+c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\main.cpp(106): warning C4244: '=' : conversion de 'double' en '_Ty', perte possible de données
           with
           [
               _Ty=unsigned char
           ]
-  ConsoleApplication2.vcxproj -> C:\Users\Tristan\source\repos\ConsoleApplication2\Debug\TD.exe
+LINK : fatal error LNK1168: impossible d'ouvrir C:\Users\Tristan\source\repos\ConsoleApplication2\Debug\TD.exe pour écrire

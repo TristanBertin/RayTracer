@@ -6,7 +6,6 @@ struct t_out //Structure of the output of the method intersect (index of the sph
 {
 	int ind;
 	double t; //minimal distance
-	Vector color;
 };
 
 class Scene
@@ -40,14 +39,12 @@ public:
 			}
 		}
 
-		col = spheres[index].Color;
-
 		if (tmin == tmax) //no sphere has been intesected
 		{
 			tmin = NULL;
 		}
 
-		t_out result = {index, tmin, col}; //we return an object with the index of the sphere, t and the vector of color's coefficients
+		t_out result = {index, tmin}; //we return an object with the index of the sphere, t and the vector of color's coefficients
 
 		return result;
 	}

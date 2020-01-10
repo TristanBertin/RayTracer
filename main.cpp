@@ -27,23 +27,24 @@ int main() {
 	
 	Vector C(0, 0, 60); // position de la caméra
 
-	Sphere s1(Vector(0,0,0), 10.0, Vector(0.8,0.9,0.9)); //Sphere 1
-	Sphere s2(Vector(-9, 0, 0), 9, Vector(0.1, 0.6, 0.9)); //Mur gauche
-	Sphere s3(Vector(70, 0, 0), 50.0, Vector(0.9, 0.2, 0.1)); //Mur
-	Sphere s4(Vector(-70, 0, 0), 50, Vector(0.1, 0.6, 0.9)); //Mur 
-	Sphere s5(Vector(0, -70, 0), 50.0, Vector(0.9, 0.65, 0.25)); //Mur
-	Sphere s6(Vector(0, 70, 0), 50, Vector(0.1, 0.6, 0.9)); //Mur 
+	Sphere s1(Vector(-13,15,-2), 10.0, Vector(0.8,0.9,0.9)); //Sphere 1
+	Sphere s3(Vector(160, 0, 0), 130.0, Vector(0.9, 0.2, 0.1)); //Mur
+	Sphere s4(Vector(-160, 0, 0), 130, Vector(0.1, 0.6, 0.9)); //Mur 
+	Sphere s5(Vector(0, -160, 0), 130, Vector(0.9, 0.65, 0.25)); //Mur
+	Sphere s6(Vector(0, 160, 0), 130, Vector(0.9, 0.9, 0.9)); //Mur bas
+	Sphere s7(Vector(0, 0, -160), 130, Vector(0.4, 0.65, 0.45)); //Mur fond
 
-	Vector L(11, 11, 11); //Light
-	double I = 100000; //Intensité
+
+	Vector L(15, -11, 50); //Light
+	double I = 900000; //Intensité
 
 	Scene scene;
 	scene.addSphere(s1);
-	scene.addSphere(s2);
 	scene.addSphere(s3);
 	scene.addSphere(s4);
 	scene.addSphere(s5);
 	scene.addSphere(s6);
+	scene.addSphere(s7);
 	
 	int w = W / 2;
 	int h = H / 2;
@@ -66,33 +67,54 @@ int main() {
 
 			double t = result.t;
 		
-			if (t != NULL)
+			if (t != NULL) // if there exist an intersection
 			{
 				int index = result.ind;
 				Sphere s = scene.spheres[index];
 				Vector coefColor = s.Color;
 
 				Vector P = C + v * t;
+
+				// We create another ray from P
+				Vector g = L - P;
+				double g_norm = g.getNorm2();
+				g.normalize();
+
 				Vector l = L - P;
-				
-				Vector normale = P - s.O;
+				Vector normale = P - s.O; //normal vector
 				normale.normalize();
-				
-				double d = l.getNorm2();
-				l.normalize();
 
-				float compa = -l.dot(normale);
+				Vector PP = P + normale * 0.000001;//intersection point slighty moved out of the sphere
 
-				if (compa > 0)
-				{	
-					double color = compa * I / d;
+				Ray second_Ray = Ray(PP, g);
+				t_out gg = scene.intersect(second_Ray);
+				double tt = gg.t;
 
-					image[(i*W + j) * 3 + 0] = cast(color * coefColor[0]);
-					image[(i*W + j) * 3 + 1] = cast(color * coefColor[1]);
-					image[(i*W + j) * 3 + 2] = cast(color * coefColor[2]);
+				//cout << "tt" << tt << "  norm2" << g_norm << endl;
+
+				if (tt != NULL)
+				{
+					//cout << "heyyyyy tt" << tt << endl;
 				}
 
-					
+				if ((tt == NULL)||(tt!=NULL && tt>g_norm)) //pas d'intersection pour le second rayon ou intersection mais derrière lampe
+				{
+
+					double d = l.getNorm2();
+					l.normalize();
+
+					float compa = l.dot(normale);
+
+					if (compa > 0)
+					{
+						double color = compa * I / d;
+
+						image[(i*W + j) * 3 + 0] = cast(color * coefColor[0]);
+						image[(i*W + j) * 3 + 1] = cast(color * coefColor[1]);
+						image[(i*W + j) * 3 + 2] = cast(color * coefColor[2]);
+					}
+				}
+	
 			}
 			
 		}
