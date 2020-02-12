@@ -56,6 +56,13 @@ public:
 		return Vector(coords[0] * a, coords[1] * a, coords[2] * a);
 	}
 
+	Vector operator^(Vector a)
+	{
+		return Vector(coords[1] * a[2] - coords[2] * a[1],
+			coords[2] * a[0] - coords[0] * a[2],
+			coords[0] * a[1] - coords[1] * a[0]);
+	}
+
 	void operator=(const Vector& B)
 	{
 		coords[0] = B[0];

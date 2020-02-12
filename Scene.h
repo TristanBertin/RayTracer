@@ -1,6 +1,6 @@
 #include <vector>
 #include <iostream>
-using namespace std;
+#include <random>
 
 struct t_out //Structure of the output of the method intersect (index of the sphere and distance)
 {
@@ -11,16 +11,17 @@ struct t_out //Structure of the output of the method intersect (index of the sph
 
 class Scene
 {
-
 public:
-	std::vector<Sphere> spheres;
-	Vector C = Vector(0, 0, 45); // position de la caméra
-	Vector L = Vector(0, -20, 35); //Light
-	double I = 1100000; //Intensité
 
-	void addSphere(Sphere S) 
+	std::vector<Object*> objects;
+	
+	Vector C = Vector(0, 15, 45); // position de la caméra
+	Vector L = Vector(0, -20, 35); //Light
+	double I = 40000000; //Intensité
+
+	void addObject(Object *O)
 	{
-		spheres.push_back(S); 
+		objects.push_back(O);
 	}
 
 	t_out intersect(Ray R)
@@ -31,9 +32,13 @@ public:
 		int index = 100;
 		Vector P = Vector(NULL, NULL, NULL); //if no intersection
 
-		for (int i = 0; i < spheres.size(); i++) //we iterate over the spheres
+		for (int i = 0; i < objects.size(); i++) //we iterate over the spheres
 		{
-			double t = spheres[i].intersect(R);
+			if (R.u[0] > 10000 || R.u[0] < -10000) {
+				cout << "RRRRRRR      " << R.u[0] << "    " << R.u[1] << "    " << R.u[2] << endl;
+			}
+
+			double t = objects[i]->intersect(R);
 
 			if (t != NULL && t < tmin) //if intesection, we check if inferior to the min already found
 			{
@@ -55,65 +60,72 @@ public:
 
 
 	Vector getColor(Ray r, int nb_steps)
+
 	{
-		t_out Z1 = intersect(r);
-		double distance_to_object = Z1.t;
+		if (nb_steps == 5)
+		{	
+			//cout << r.u[0] << endl;
+			return Vector(0, 0, 0);
+		}
 
-		if (distance_to_object != NULL) // if there exist an intersection
+		else
 		{
-			int index = Z1.ind;
-			Sphere s = spheres[index];
-			Vector coefColor = spheres[index].Color;
-			Vector P = Z1.P; //intersection point
+			t_out Z1 = intersect(r);
+			//cout << "ccccc    " << nb_steps << "    " << r.C[0] << "    " << r.C[1] << "    " << r.C[2] << endl;
+			double distance_to_object = Z1.t;
 
-			Vector g = L - P;// We create another ray from P to Light to create shadows
-			double g_norm = g.getNorm2();
-			g.normalize();
-
-			Vector normal = P - s.O; //normal vector
-			normal.normalize();
-
-			Vector PP = P + normal * 0.0000001;//intersection point slighty moved out of the sphere
-			Ray second_Ray = Ray(PP, g);
-			t_out Z2 = intersect(second_Ray);
-			double dist_obj_obj2 = Z2.t;
-
-			if (s.Specu == true) //if surface is a mirror
+			if (distance_to_object != NULL) // if there exist an intersection
 			{
-				if (nb_steps == 5)
-				{
-					return Vector(0, 0, 0);
-				}
+				int index = Z1.ind;
+				Object *s = objects[index];
+				Vector coefColor = objects[index]->Color;
+				Vector P = Z1.P; //intersection point
 
-				else
+				Vector g = L - P;// We create another ray from P to Light to create shadows
+				double g_norm = g.getNorm2();
+				g.normalize();
+
+				Vector normal = P - s->O(); //normal vector
+				normal.normalize();
+
+				Vector PP = P + normal * 0.0000001;//intersection point slighty moved out of the sphere
+				Ray second_Ray = Ray(PP, g);
+				t_out Z2 = intersect(second_Ray);
+				double dist_obj_obj2 = Z2.t;
+
+				// Ajout de la contribution indirecte
+				double r1 = uniform(engine);
+				double r2 = uniform(engine);
+				Vector aleatoire = Vector(uniform(engine)-0.5, uniform(engine)-0.5, uniform(engine)-0.5);
+				Vector tangent1 = normal ^ aleatoire;
+				Vector tangent2 = tangent1 ^ normal;
+
+
+				Vector direction_aleatoire_repere_local(cos(2 * 3.1415926535*r1) * sqrt(1 - r2), sin(2 * 3.1415926535*r1) * sqrt(1 - r2), sqrt(r2));
+				Vector direction_aleatoire = normal * direction_aleatoire_repere_local[2] + tangent1 * direction_aleatoire_repere_local[0] + tangent2 * direction_aleatoire_repere_local[1];
+
+				Ray rayon_aleatoire = Ray(P + normal * 0.00001, direction_aleatoire);
+				Vector indirect_intensity = getColor(rayon_aleatoire, nb_steps + 1); //*s->albedo;
+
+				if (s->isMirror == true) //if surface is a mirror
 				{
 					if ((dist_obj_obj2 != NULL) && (dist_obj_obj2 < sqrt(g_norm))) // si objet qui créé de l'ombre (c'est à dire entre objet direct et lampe)
 					{
 						Vector out = Vector(0, 0, 0);
-						return out;
+						return out + indirect_intensity;
 					}
 					else //pas d'ombre
 					{
-						Ray reflector = s.reflection(r.u, P);
+						Ray reflector = s->reflection(r.u, P);
 						reflector.C = PP;
 						Vector out = getColor(reflector, nb_steps + 1); //on récupère la couleur du nouveau rayon
-						return out;
+						return out + indirect_intensity;
 					}
 				}
-			}
 
-			else if (s.optic_indice != NULL) //surface is transparent
-			{
-
-				if (nb_steps == 10)
+				else if (s->Optic_indice != NULL) //surface is transparent
 				{
-					return Vector(0, 0, 0);
-				}
-
-				else //NO SHADOW !!!!
-				{
-					
-					Ray refracted = s.refraction(r.u, P);
+					Ray refracted = s->refraction(r.u, P);
 
 					if (r.u.dot(normal) < 0)
 					{
@@ -123,51 +135,50 @@ public:
 					{
 						refracted.C = P + normal * 0.0000001;
 					}
-					return getColor(refracted, nb_steps + 1);
+					return getColor(refracted, nb_steps + 1) + indirect_intensity;
 
 				}
 
-			}
 
-			else //if surface is not a mirror nor transparent
-			{
-				if ((dist_obj_obj2 != NULL) && (dist_obj_obj2 < sqrt(g_norm))) // si objet qui créé de l'ombre (c'est à dire entre objet direct et lampe)
+				else //if surface is not a mirror nor transparent
 				{
-					Vector out = Vector(0, 0, 0);
-					return out;
-				}
-				else
-				{
-					float compa = g.dot(normal);
-					if (compa > 0)
+					if ((dist_obj_obj2 != NULL) && (dist_obj_obj2 < sqrt(g_norm))) // si objet qui créé de l'ombre (c'est à dire entre objet direct et lampe)
 					{
-						double color = compa * I / g_norm;
-						Vector out = Vector(cast(color * coefColor[0]), cast(color * coefColor[1]), cast(color * coefColor[2]));
-						return out;
+						Vector out = Vector(0, 0, 0);
+						return out + indirect_intensity;
 					}
 					else
 					{
-						Vector out = Vector(0, 0, 0);
-						return out;
+						float compa = g.dot(normal);
+						if (compa > 0)
+						{
+							double color = compa * I / g_norm;
+							Vector out = Vector(color * coefColor[0], color * coefColor[1], color * coefColor[2]);
+							return out + indirect_intensity;
+						}
+						else
+						{
+							Vector out = Vector(0, 0, 0);
+							return out + indirect_intensity;
+						}
 					}
+
 				}
-				
 
 			}
-			
+
+			else //no direct intersection
+			{
+				Vector out = Vector(0, 0, 0);
+				return out;
+			}
+
 		}
 		
-		else //no direct intersection
-		{
-			Vector out = Vector(0, 0, 0);
-			return out;
-		}
+
+
 		
 	}
-
-
-
-
 
 
 };
