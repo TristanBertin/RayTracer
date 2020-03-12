@@ -2,11 +2,12 @@
 #include <iostream>
 #include <random>
 
-struct t_out //Structure of the output of the method intersect (index of the sphere and distance)
+struct scene_out //Structure of the output of the method intersect (index of the sphere and distance)
 {
-	int ind;
+	int ind; //indice object
 	double t; //minimal distance
 	Vector P; //intersection point
+	Vector N; //normal
 };
 
 class Scene
@@ -15,45 +16,46 @@ public:
 
 	std::vector<Object*> objects;
 	
-	Vector C = Vector(0, 15, 45); // position de la caméra
-	Vector L = Vector(0, -20, 35); //Light
-	double I = 40000000; //Intensité
+	Vector C = Vector(0, -20, 70); // position de la caméra
+	Vector L = Vector(10, 20, 40); //Light
+	double I = 450000000; //Intensité
+	bool multi_rays = false;
 
 	void addObject(Object *O)
 	{
 		objects.push_back(O);
 	}
 
-	t_out intersect(Ray R)
+	scene_out intersect(Ray R)
 	{
 		// Initialisation of all the variables that will be passed to main.cpp
 		double tmin = 5000000000000.0;
 		double tmax = tmin;
 		int index = 100;
-		Vector P = Vector(NULL, NULL, NULL); //if no intersection
+		scene_out result = {-1, NULL, Vector(NULL,NULL,NULL), Vector(NULL, NULL, NULL)}; //if no intersection
 
 		for (int i = 0; i < objects.size(); i++) //we iterate over the spheres
 		{
-			if (R.u[0] > 10000 || R.u[0] < -10000) {
-				cout << "RRRRRRR      " << R.u[0] << "    " << R.u[1] << "    " << R.u[2] << endl;
-			}
-
-			double t = objects[i]->intersect(R);
+			object_out inter_out = objects[i]->intersect(R);
+			double t = inter_out.t;
 
 			if (t != NULL && t < tmin) //if intesection, we check if inferior to the min already found
 			{
-				index = i; 
 				tmin = t;
-				P = R.C + R.u * t;
+				result.P = R.C + R.u * t;
+				result.N = inter_out.N;
+				index = i;
 			}
 		}
 
-		if (tmin == tmax) //no sphere has been intesected
+		if (tmin == tmax) //nothing has been intersected
 		{
-			tmin = NULL;
+			scene_out result = {-1, NULL, Vector(NULL,NULL,NULL), Vector(NULL, NULL, NULL) };
+			return result;
 		}
 
-		t_out result = {index, tmin, P}; //we return an object with the index of the sphere, and the minimal distance
+		result.t = tmin;
+		result.ind = index;
 
 		return result;
 	}
@@ -70,44 +72,52 @@ public:
 
 		else
 		{
-			t_out Z1 = intersect(r);
-			//cout << "ccccc    " << nb_steps << "    " << r.C[0] << "    " << r.C[1] << "    " << r.C[2] << endl;
+			
+			scene_out Z1 = intersect(r);
 			double distance_to_object = Z1.t;
 
 			if (distance_to_object != NULL) // if there exist an intersection
 			{
 				int index = Z1.ind;
+
 				Object *s = objects[index];
-				Vector coefColor = objects[index]->Color;
+
+				Vector coefColor = s->mat.Color;
+
 				Vector P = Z1.P; //intersection point
 
-				Vector g = L - P;// We create another ray from P to Light to create shadows
+				Vector g = L - P; // We create another ray from P to Light to create shadows
+
 				double g_norm = g.getNorm2();
 				g.normalize();
 
-				Vector normal = P - s->O(); //normal vector
-				normal.normalize();
+				Vector normal = Z1.N; //normal vector
 
 				Vector PP = P + normal * 0.0000001;//intersection point slighty moved out of the sphere
 				Ray second_Ray = Ray(PP, g);
-				t_out Z2 = intersect(second_Ray);
+
+				scene_out Z2 = intersect(second_Ray);
 				double dist_obj_obj2 = Z2.t;
 
-				// Ajout de la contribution indirecte
-				double r1 = uniform(engine);
-				double r2 = uniform(engine);
-				Vector aleatoire = Vector(uniform(engine)-0.5, uniform(engine)-0.5, uniform(engine)-0.5);
-				Vector tangent1 = normal ^ aleatoire;
-				Vector tangent2 = tangent1 ^ normal;
+				Vector indirect_intensity = Vector(0, 0, 0);
 
+				if (multi_rays == true)
+				{
+					// Ajout de la contribution indirecte
+					double r1 = uniform(engine);
+					double r2 = uniform(engine);
+					Vector aleatoire = Vector(uniform(engine) - 0.5, uniform(engine) - 0.5, uniform(engine) - 0.5);
+					Vector tangent1 = normal ^ aleatoire;
+					Vector tangent2 = tangent1 ^ normal;
 
-				Vector direction_aleatoire_repere_local(cos(2 * 3.1415926535*r1) * sqrt(1 - r2), sin(2 * 3.1415926535*r1) * sqrt(1 - r2), sqrt(r2));
-				Vector direction_aleatoire = normal * direction_aleatoire_repere_local[2] + tangent1 * direction_aleatoire_repere_local[0] + tangent2 * direction_aleatoire_repere_local[1];
+					Vector direction_aleatoire_repere_local(cos(2 * 3.1415926535*r1) * sqrt(1 - r2), sin(2 * 3.1415926535*r1) * sqrt(1 - r2), sqrt(r2));
+					Vector direction_aleatoire = normal * direction_aleatoire_repere_local[2] + tangent1 * direction_aleatoire_repere_local[0] + tangent2 * direction_aleatoire_repere_local[1];
 
-				Ray rayon_aleatoire = Ray(P + normal * 0.00001, direction_aleatoire);
-				Vector indirect_intensity = getColor(rayon_aleatoire, nb_steps + 1); //*s->albedo;
+					Ray rayon_aleatoire = Ray(P + normal * 0.00001, direction_aleatoire);
+					indirect_intensity = getColor(rayon_aleatoire, nb_steps + 1); //*s->albedo;
+				}
 
-				if (s->isMirror == true) //if surface is a mirror
+				if (s->mat.isMirror == true) //if surface is a mirror
 				{
 					if ((dist_obj_obj2 != NULL) && (dist_obj_obj2 < sqrt(g_norm))) // si objet qui créé de l'ombre (c'est à dire entre objet direct et lampe)
 					{
@@ -116,16 +126,16 @@ public:
 					}
 					else //pas d'ombre
 					{
-						Ray reflector = s->reflection(r.u, P);
+						Ray reflector = s->reflection(r.u, P, normal);
 						reflector.C = PP;
 						Vector out = getColor(reflector, nb_steps + 1); //on récupère la couleur du nouveau rayon
 						return out + indirect_intensity;
 					}
 				}
 
-				else if (s->Optic_indice != NULL) //surface is transparent
+				else if (s->mat.Optic_indice != NULL) //surface is transparent
 				{
-					Ray refracted = s->refraction(r.u, P);
+					Ray refracted = s->refraction(r.u, P, normal);
 
 					if (r.u.dot(normal) < 0)
 					{

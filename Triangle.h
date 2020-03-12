@@ -1,25 +1,29 @@
 class Triangle:public Object
 {
 public:
-	Triangle(Vector Color, bool isMirror, double Optic_indice, const Vector A, const Vector B, const Vector C): Object(Color, isMirror, Optic_indice), _A(A), _B(B), _C(C) {};
-	Vector _A, _B, _C;
+	Triangle(Material material_, Vector A, Vector B, Vector C): Object(material_), A(A), B(B), C(C) {
+	};
+	
+	Vector &A, &B, &C;
 
-	virtual Vector A() { return _A; };
-	virtual Vector B() { return _B; };
-	virtual Vector C() { return _C; };
-
-	double intersect(Ray& r)
+	object_out intersect(Ray& r)
 	{
-		Vector N = (_B - _A) ^ (_C - _A);
-		N.normalize();
-		double t = -(_C - r.C).dot(N) / ((r.u).dot(N));
 
-		if (t < 0) return NULL;
+		object_out result = {NULL, Vector(NULL,NULL,NULL), Vector(NULL,NULL,NULL) };
+
+		Vector N = (B - A) ^ (C - A);
+		// N = N * (-1.0);
+		
+		N.normalize();
+
+		double t = (C - r.C).dot(N) / ((r.u).dot(N));
+
+		if (t < 0) return result; //t = NULL
 
 		Vector P = r.C + r.u * t;
-		Vector u = _B - _A;
-		Vector v = _C - _A;
-		Vector w = P - _A;
+		Vector u = B - A;
+		Vector v = C - A;
+		Vector w = P - A;
 
 		double m11 = u.getNorm2();
 		double m12 = u.dot(v);
@@ -37,18 +41,25 @@ public:
 		double gamma = detg / detm;  //coordonnées barycentriques par rapport à C
 
 		double alpha = 1 - beta - gamma;
-		if (alpha < 0 || alpha> 1) return NULL;
-		if (beta < 0 || beta>1) return NULL;
-		if (gamma < 0 || gamma>1) return NULL;
+		if (alpha < 0 || alpha> 1) return result; //t = NULL no intersection
+		if (beta < 0 || beta>1) return result; //t = NULL
+		if (gamma < 0 || gamma>1) return result; //t = NULL
 
-		return t;
+		result.t = t;
+		result.N = N;
+		result.P = P;
+
+		//cout << "nn" << N << endl;
+		
+		return result;
 	}
 
 
-
-
-
-
-		
-
+	Vector getNormal(Vector P)
+	{
+		Vector n = (B - A) ^ (C - A);
+		n.normalize();
+		return n;
+	}
+	
 };

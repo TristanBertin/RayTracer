@@ -1,23 +1,25 @@
-﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(391,5): warning MSB8028: Le répertoire intermédiaire (Debug\) contient des fichiers partagés provenant d'un autre projet (ConsoleApplication2.vcxproj). Cela peut entraîner un comportement de nettoyage et de régénération incorrect.
-  main.cpp
-c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\scene.h(35): warning C4018: '<' : incompatibilité signed/unsigned
-c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\scene.h(149): warning C4244: 'initialisation' : conversion de 'double' en 'float', perte possible de données
-c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\main.cpp(32): warning C4091: '' : ignoré à gauche de 'std::vector<int,std::allocator<_Ty>>' quand aucune variable n'est déclarée
+﻿  main.cpp
+c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\geometry.h(11): warning C4018: '<' : incompatibilité signed/unsigned
+c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\geometry.h(52): warning C4018: '<' : incompatibilité signed/unsigned
+c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\geometry.h(275): warning C4018: '<' : incompatibilité signed/unsigned
+c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\scene.h(37): warning C4018: '<' : incompatibilité signed/unsigned
+c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\scene.h(162): warning C4244: 'initialisation' : conversion de 'double' en 'float', perte possible de données
+c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\main.cpp(37): warning C4091: '' : ignoré à gauche de 'std::vector<int,std::allocator<_Ty>>' quand aucune variable n'est déclarée
           with
           [
               _Ty=int
           ]
-c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\main.cpp(91): warning C4244: '=' : conversion de 'double' en '_Ty', perte possible de données
+c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\main.cpp(117): warning C4244: '=' : conversion de 'double' en '_Ty', perte possible de données
           with
           [
               _Ty=unsigned char
           ]
-c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\main.cpp(92): warning C4244: '=' : conversion de 'double' en '_Ty', perte possible de données
+c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\main.cpp(118): warning C4244: '=' : conversion de 'double' en '_Ty', perte possible de données
           with
           [
               _Ty=unsigned char
           ]
-c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\main.cpp(93): warning C4244: '=' : conversion de 'double' en '_Ty', perte possible de données
+c:\users\tristan\source\repos\consoleapplication2\consoleapplication2\main.cpp(119): warning C4244: '=' : conversion de 'double' en '_Ty', perte possible de données
           with
           [
               _Ty=unsigned char
