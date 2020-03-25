@@ -12,7 +12,7 @@ public:
 		object_out result = {NULL, Vector(NULL,NULL,NULL), Vector(NULL,NULL,NULL) };
 
 		Vector N = (B - A) ^ (C - A);
-		// N = N * (-1.0);
+		N = N * (-1.0);
 		
 		N.normalize();
 

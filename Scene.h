@@ -10,16 +10,40 @@ struct scene_out //Structure of the output of the method intersect (index of the
 	Vector N; //normal
 };
 
+Vector getRandomDir(Vector n) {
+	double r1 = uniform(engine);
+	double r2 = uniform(engine);
+	Vector local_random_dir(cos(2 * 3.14159265*r1)*sqrt(1 - r2), sin(2 * 3.14159265*r1)*sqrt(1 - r2), sqrt(r2));
+	//Vector3d rand_vec(uniform(engine)-0.5, uniform(engine)-0.5, uniform(engine)); 
+	Vector rand_vec = Vector(1, 0, 0);
+	Vector tangent1 = n ^ rand_vec;
+	tangent1.normalize();
+	Vector tangent2 = tangent1 ^ n;
+	tangent2.normalize();
+	return n * local_random_dir[2] + tangent1 * local_random_dir[0] + tangent2 * local_random_dir[1];
+}
+
 class Scene
 {
 public:
 
 	std::vector<Object*> objects;
 	
-	Vector C = Vector(0, -20, 70); // position de la caméra
+	Vector C = Vector(0, -20, 50); // position de la caméra
 	Vector L = Vector(10, 20, 40); //Light
-	double I = 450000000; //Intensité
-	bool multi_rays = false;
+	//double I = 80000000;; //Intensité
+	//int N_rays = 400;
+	//double I = 6000000;
+
+	int N_rays = 30;
+	double I = 340000000;
+
+	//double I = 400000000;; //Intensité
+	//int N_rays = 30;
+	bool indirect_I = true;
+	bool spherical_light = true;
+
+	Material mat3 = Material(Vector(1,1,1), false, NULL);
 
 	void addObject(Object *O)
 	{
@@ -34,7 +58,7 @@ public:
 		int index = 100;
 		scene_out result = {-1, NULL, Vector(NULL,NULL,NULL), Vector(NULL, NULL, NULL)}; //if no intersection
 
-		for (int i = 0; i < objects.size(); i++) //we iterate over the spheres
+		for (int i = 1; i < objects.size(); i++) //we iterate over the spheres, not the first one !!
 		{
 			object_out inter_out = objects[i]->intersect(R);
 			double t = inter_out.t;
@@ -64,130 +88,109 @@ public:
 	Vector getColor(Ray r, int nb_steps)
 
 	{
-		if (nb_steps == 5)
-		{	
+		Vector color_pixel = Vector(0, 0, 0);
+
+		if (nb_steps == 5) //max recursive calls
+		{
 			//cout << r.u[0] << endl;
-			return Vector(0, 0, 0);
+			return color_pixel; //(0,0,0)
 		}
 
-		else
+		scene_out Z1 = intersect(r);
+		double distance_to_object = Z1.t;
+
+		if (distance_to_object != NULL) // if there exist an intersection
 		{
-			
-			scene_out Z1 = intersect(r);
-			double distance_to_object = Z1.t;
+			int index = Z1.ind;
+			Object *s = objects[index];
+			Vector coefColor = s->mat.Color;
+			Vector P = Z1.P; //intersection point
+			Vector normal = Z1.N; //normal vector
+			Vector PP = P + normal * 0.0001;//intersection point slighty moved out of the sphere
+			double scale_light = 1.0;
 
-			if (distance_to_object != NULL) // if there exist an intersection
+
+
+			/*if (index == 0) //if ray gets to sphere of light
 			{
-				int index = Z1.ind;
+				double R = dynamic_cast<Sphere*>(s)->R;
+				Vector HH = dynamic_cast<Sphere*>(s)->mat.Color * (I / (4 * 3.14159265 * R*R));
+				return HH;
+			}*/
 
-				Object *s = objects[index];
+			if (normal.dot(r.u) > 0) normal = normal * (-1); //be careful HERE
 
-				Vector coefColor = s->mat.Color;
-
-				Vector P = Z1.P; //intersection point
-
-				Vector g = L - P; // We create another ray from P to Light to create shadows
-
-				double g_norm = g.getNorm2();
-				g.normalize();
-
-				Vector normal = Z1.N; //normal vector
-
-				Vector PP = P + normal * 0.0000001;//intersection point slighty moved out of the sphere
-				Ray second_Ray = Ray(PP, g);
-
-				scene_out Z2 = intersect(second_Ray);
-				double dist_obj_obj2 = Z2.t;
-
-				Vector indirect_intensity = Vector(0, 0, 0);
-
-				if (multi_rays == true)
-				{
-					// Ajout de la contribution indirecte
-					double r1 = uniform(engine);
-					double r2 = uniform(engine);
-					Vector aleatoire = Vector(uniform(engine) - 0.5, uniform(engine) - 0.5, uniform(engine) - 0.5);
-					Vector tangent1 = normal ^ aleatoire;
-					Vector tangent2 = tangent1 ^ normal;
-
-					Vector direction_aleatoire_repere_local(cos(2 * 3.1415926535*r1) * sqrt(1 - r2), sin(2 * 3.1415926535*r1) * sqrt(1 - r2), sqrt(r2));
-					Vector direction_aleatoire = normal * direction_aleatoire_repere_local[2] + tangent1 * direction_aleatoire_repere_local[0] + tangent2 * direction_aleatoire_repere_local[1];
-
-					Ray rayon_aleatoire = Ray(P + normal * 0.00001, direction_aleatoire);
-					indirect_intensity = getColor(rayon_aleatoire, nb_steps + 1); //*s->albedo;
-				}
-
-				if (s->mat.isMirror == true) //if surface is a mirror
-				{
-					if ((dist_obj_obj2 != NULL) && (dist_obj_obj2 < sqrt(g_norm))) // si objet qui créé de l'ombre (c'est à dire entre objet direct et lampe)
-					{
-						Vector out = Vector(0, 0, 0);
-						return out + indirect_intensity;
-					}
-					else //pas d'ombre
-					{
-						Ray reflector = s->reflection(r.u, P, normal);
-						reflector.C = PP;
-						Vector out = getColor(reflector, nb_steps + 1); //on récupère la couleur du nouveau rayon
-						return out + indirect_intensity;
-					}
-				}
-
-				else if (s->mat.Optic_indice != NULL) //surface is transparent
-				{
-					Ray refracted = s->refraction(r.u, P, normal);
-
-					if (r.u.dot(normal) < 0)
-					{
-						refracted.C = P - normal * 0.000001;
-					}
-					else
-					{
-						refracted.C = P + normal * 0.0000001;
-					}
-					return getColor(refracted, nb_steps + 1) + indirect_intensity;
-
-				}
-
-
-				else //if surface is not a mirror nor transparent
-				{
-					if ((dist_obj_obj2 != NULL) && (dist_obj_obj2 < sqrt(g_norm))) // si objet qui créé de l'ombre (c'est à dire entre objet direct et lampe)
-					{
-						Vector out = Vector(0, 0, 0);
-						return out + indirect_intensity;
-					}
-					else
-					{
-						float compa = g.dot(normal);
-						if (compa > 0)
-						{
-							double color = compa * I / g_norm;
-							Vector out = Vector(color * coefColor[0], color * coefColor[1], color * coefColor[2]);
-							return out + indirect_intensity;
-						}
-						else
-						{
-							Vector out = Vector(0, 0, 0);
-							return out + indirect_intensity;
-						}
-					}
-
-				}
-
-			}
-
-			else //no direct intersection
+			if (s->mat.isMirror == true) //if surface is a mirror
 			{
-				Vector out = Vector(0, 0, 0);
+				Ray reflector = s->reflection(r.u, P, normal);
+				reflector.C = PP;
+				Vector out = getColor(reflector, nb_steps + 1); //on récupère la couleur du nouveau rayon
 				return out;
 			}
 
+			else if (s->mat.Optic_indice != NULL) //surface is transparent
+			{
+				Ray refracted = s->refraction(r.u, P, normal);
+
+				if (r.u.dot(normal) < 0)
+				{
+					refracted.C = P - normal * 0.000001;
+				}
+				else
+				{
+					refracted.C = P + normal * 0.0000001;
+				}
+				return getColor(refracted, nb_steps + 1);
+			}
+
+			Vector l;
+			if (spherical_light == false)
+			{
+				l = L - P; // We create another ray from P to Light to create shadows
+			}
+			else
+			{
+				Vector OO = dynamic_cast<Sphere*>(objects[0])->O;
+				l = P - OO;
+				l.normalize();
+				Vector random_dir = getRandomDir(l);
+				scale_light = random_dir.dot(l);
+				Vector new_L = OO + random_dir * dynamic_cast<Sphere*>(objects[0])->R;
+				l = (new_L - P);
+			}
+
+			double l_norm = l.getNorm2();
+			l.normalize();
+			Ray second_Ray = Ray(PP, l);
+			scene_out Z2 = intersect(second_Ray);
+			double dist_lamp_obj = Z2.t;
+				
+			if ((dist_lamp_obj != NULL) && (dist_lamp_obj < sqrt(l_norm))) // si objet qui créé de l'ombre (c'est à dire entre objet direct et lampe)
+			{
+				return color_pixel;
+			}
+
+			else //if surface is not a mirror nor transparent, and no shadow
+			{
+				float compa = l.dot(normal);
+
+				if (compa > 0)
+				{
+					double intensity = compa * I / l_norm;
+					color_pixel = coefColor * (intensity * scale_light / 3.141592);
+				}
+					
+			}
+
+			
+			Vector random_dir = getRandomDir(normal);
+			Ray random_ray(PP, random_dir);
+			color_pixel = color_pixel + getColor(random_ray, nb_steps + 1); //* s->mat.Color;
+			
 		}
-		
 
+		return color_pixel;
 
-		
 	}
 
 

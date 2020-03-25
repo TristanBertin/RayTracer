@@ -22,8 +22,6 @@ public:
 	Vector O;
 	double R;
 
-
-
 	object_out intersect(Ray& r)
 	{
 

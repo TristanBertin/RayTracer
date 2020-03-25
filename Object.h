@@ -52,12 +52,11 @@ public:
 	Ray refraction(Vector& i, Vector P, Vector N) //incident ray and intersection point as inputs
 	{
 		i.normalize();
-		//Vector n = (B - A) ^ (C - A);
-		N.normalize();
-
+		N = N * (-1);
+		
 		if (i.dot(N) >= 0) //if refraction is from inside to outisde
 		{
-			//N = N * (-1);
+			
 			mat.Optic_indice = 1 / mat.Optic_indice;
 		}
 
