@@ -5,9 +5,9 @@
 ##### This repo has been built from scratch in C without any use of external package and is able to exploit multi-processing.
 
 <p float="left">
-  <img src="./images/focus.png" alt="drawing" width="250"/>
-  <img src="./images/image7899.png" alt="drawing" width="250"/>
-  <img src="./images/image_hh.png" alt="drawing" width="250"/>
+  <img src="./images/focus.png" alt="drawing" width="280"/>
+  <img src="./images/image7899.png" alt="drawing" width="280"/>
+  <img src="./images/image_hh.png" alt="drawing" width="280"/>
 </p>
 
 
